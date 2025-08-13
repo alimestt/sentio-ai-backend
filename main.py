@@ -4,6 +4,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import json
+from datetime import datetime
+import pytz
 
 # API anahtarını Render'daki ortam değişkenlerinden al
 try:
@@ -44,7 +46,12 @@ class TextData(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"status": "Sentio.ai Gerçek Analiz Motoru Aktif"}
+    istanbul_tz = pytz.timezone("Europe/Istanbul")
+    now_istanbul = datetime.now(istanbul_tz)
+    return {
+        "status": "Sentio.ai Gerçek Analiz Motoru Aktif",
+        "timestamp": now_istanbul.strftime("%Y-%m-%d %H:%M:%S")
+    }
 
 @app.post("/analyze")
 async def analyze_text(data: TextData):
@@ -69,10 +76,8 @@ async def analyze_text(data: TextData):
 
         response = model.generate_content(prompt)
 
-        # Gemini'den gelen yanıtın text kısmını alıp JSON'a çeviriyoruz
         response_text = response.text.strip().replace("```json", "").replace("```", "").strip()
 
-        # Doğrudan JSON objesi olarak döndürmek için parse ediyoruz
         return json.loads(response_text)
 
     except Exception as e:
